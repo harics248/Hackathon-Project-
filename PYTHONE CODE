@@ -1,0 +1,76 @@
+import speech_recognition as sr
+import pyttsx3
+import pyjokes
+import requests
+from PIL import Image
+from io import BytesIO
+import webbrowser
+
+# Initialize the speech engine
+def speak(text):
+    engine = pyttsx3.init()
+    engine.say(text)
+    engine.runAndWait()
+
+# Listen to voice commands
+def listen():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+    try:
+        command = recognizer.recognize_google(audio)
+        print(f"You said: {command}")
+        return command.lower()
+    except sr.UnknownValueError:
+        speak("Sorry, I didn't catch that. Can you say it again?")
+        return None
+
+# Tell a joke
+def tell_joke():
+    joke = pyjokes.get_joke()
+    speak(joke)
+    print(joke)
+
+# Fetch an image from Unsplash based on the query
+def search_image(query):
+    api_key = "JqnthAEP4LWtDFiytK5jn3RyGiW5vFQwQspGJHGWihI"  # Replace with your Unsplash Access Key
+    url = f"https://api.unsplash.com/search/photos?query={query}&client_id={api_key}"
+    response = requests.get(url).json()
+    if response["total"] > 0:
+        image_url = response['results'][0]['urls']['small']
+        image_data = requests.get(image_url).content
+        img = Image.open(BytesIO(image_data))
+        img.show()
+    else:
+        speak("Sorry, I couldn't find any images for your search.")
+
+# Search for songs on YouTube
+def search_youtube(song_name):
+    url = f"https://www.youtube.com/results?search_query={song_name}"
+    webbrowser.open(url)
+    speak(f"Here are the search results for {song_name}")
+
+# Process the voice command
+def process_command(command):
+    if "joke" in command:
+        tell_joke()
+    elif "picture of" in command:
+        query = command.replace("picture of", "").strip()
+        search_image(query)
+    elif "play song" in command:
+        song_name = command.replace("play song", "").strip()
+        search_youtube(song_name)
+    else:
+        speak("I’m not sure how to do that yet, but I’m learning!")
+
+# Main program loop
+if __name__ == "__main__":
+    speak("Hello BUDDY! Your personalized AI is ready. How can I help you?")
+    while True:
+        command = listen()
+        if command:
+            if "exit" in command or "quit" in command:
+                speak("Goodbye, BUDDY! Have a great day!")
+                break
+            process_command(command)
